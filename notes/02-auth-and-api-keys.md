@@ -57,6 +57,8 @@ export const authClient = createAuthClient({ plugins: [adminClient()] });
 
 ## The key vault
 
+> **Status, 2026-09-12:** built, then shelved on branch `key-vault`. The pilot uses one OxARCA team key held by the engine, so no user keys are stored. The design below stands if users later bring their own keys.
+
 ### Requirements
 
 1. A user's key is usable by the server (to run jobs) but never visible to anyone, including the user, after it is saved.

@@ -10,8 +10,13 @@ model keys, job submission and usage control. The Python pipeline runs separatel
 - [x] Login: Better Auth with email + password, optional Google, roles (`admin`, `researcher`)
 - [x] Database: Drizzle ORM over node-postgres; Neon on Vercel, embedded Postgres locally (`npm run db:local`)
 - [x] Route protection (`proxy.ts`) and a server-side session layer (`lib/session.ts`)
-- [x] Dashboard and a read-only admin user list
-- [ ] Encrypted key vault (phase 1), jobs and engine integration (phase 2), budgets and admin controls (phase 3)
+- [x] Dashboard, and an admin user list with ban and unban
+- [x] Audit log of admin actions (`audit_log` table)
+- [x] Unit tests with Vitest (`npm test`)
+- [ ] Budgets and usage tracking for the shared OxARCA model key, then jobs and engine integration
+
+The pilot runs on one OxARCA team key held by the engine, with per-user dollar caps. A per-user
+API key vault was built and is shelved on the `key-vault` branch.
 
 ## Run locally
 
@@ -46,12 +51,16 @@ database.
 
 ## Test
 
+```bash
+npm test                            # unit tests (Vitest); no database or server needed
+npm run typecheck && npm run lint
+```
+
 With both terminals running:
 
 ```bash
 npm run test:smoke                  # HTTP checks: sign-up, roles, redirects, sign-out, sign-in
-npm run typecheck && npm run lint
-npm run db:studio                   # browse the user, session and account tables
+npm run db:studio                   # browse the tables
 ```
 
 The smoke test uses `admin@example.com` and `researcher@example.com` with the password
@@ -64,6 +73,8 @@ The smoke test uses `admin@example.com` and `researcher@example.com` with the pa
 3. As a researcher, open `/admin`. You are sent back with "That page is for administrators only."
 4. Sign out, then sign in with a wrong password. An error appears under the form.
 5. Sign in with an `ADMIN_EMAILS` account. The Admin link appears and lists every user.
+6. As an admin, press **Ban** next to another user and confirm. They are signed out at once and
+   cannot sign in until you press **Unban**.
 
 ## Scripts
 
@@ -73,14 +84,16 @@ The smoke test uses `admin@example.com` and `researcher@example.com` with the pa
 | `npm run dev` | dev server |
 | `npm run build` | runs migrations, then `next build` (what Vercel runs) |
 | `npm run typecheck` / `npm run lint` | TypeScript and ESLint |
+| `npm test` | unit tests (Vitest) |
 | `npm run auth:generate` | regenerate `db/schema.ts` from `lib/auth.ts` after changing auth plugins |
 | `npm run db:generate` | write a new SQL migration into `drizzle/` from `db/schema.ts` |
 | `npm run db:migrate` | apply migrations to `DATABASE_URL` |
 | `npm run db:studio` | browse the database |
 | `npm run test:smoke` | HTTP smoke test of login and route protection |
 
-Schema workflow: edit `lib/auth.ts` or `db/schema.ts` → `npm run auth:generate` (auth tables only)
-→ `npm run db:generate` → commit the new file in `drizzle/`.
+Schema workflow: our tables live in `db/app-schema.ts`. Better Auth's are generated into
+`db/schema.ts`, so never edit that file by hand; after changing auth plugins in `lib/auth.ts`, run
+`npm run auth:generate`. Then run `npm run db:generate` and commit the new file in `drizzle/`.
 
 ## Deploy on Vercel
 
@@ -98,12 +111,14 @@ Full deployment notes: `../notes/04-tools-and-vercel-deployment.md`.
 app/                  routes (App Router)
   api/auth/[...all]/  Better Auth handler
   login/ signup/      auth pages
-  dashboard/ admin/   protected pages
-components/           UI primitives and auth forms
-db/                   Drizzle client (db/index.ts) and schema (db/schema.ts, generated)
+  dashboard/ admin/   protected pages; admin/actions.ts bans and unbans
+components/           UI primitives, auth forms, admin controls
+db/                   Drizzle client (index.ts), Better Auth tables (schema.ts, generated), ours (app-schema.ts)
 drizzle/              SQL migrations (committed)
 lib/auth.ts           Better Auth server config
 lib/auth-client.ts    Better Auth React client
 lib/session.ts        session helpers for server components and actions
+lib/audit.ts          writes audit_log entries
 proxy.ts              optimistic route protection
+test/                 Vitest helpers (tests sit next to the code as *.test.ts)
 ```

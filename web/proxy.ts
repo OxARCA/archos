@@ -5,9 +5,13 @@ import { getSessionCookie } from "better-auth/cookies";
  * Optimistic route protection (Next.js 16 "proxy", formerly middleware).
  * Only checks that a session cookie exists; every protected page and action
  * still verifies the session server-side via lib/session.ts.
+ *
+ * It does not send signed-in users away from /login or /signup: a cookie can
+ * outlive its session (after a ban, for example), and redirecting on the cookie
+ * alone loops between /login and /dashboard. Those pages check the real
+ * session instead.
  */
-const PROTECTED_PREFIXES = ["/dashboard", "/admin", "/keys", "/jobs", "/collections", "/usage"];
-const AUTH_PAGES = new Set(["/login", "/signup"]);
+const PROTECTED_PREFIXES = ["/dashboard", "/admin", "/jobs", "/collections", "/usage"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -23,10 +27,6 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  if (AUTH_PAGES.has(pathname) && hasSession) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
   return NextResponse.next();
 }
 
@@ -34,11 +34,8 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/admin/:path*",
-    "/keys/:path*",
     "/jobs/:path*",
     "/collections/:path*",
     "/usage/:path*",
-    "/login",
-    "/signup",
   ],
 };

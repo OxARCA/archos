@@ -14,14 +14,14 @@
 A web app where a historian can:
 
 1. **Sign in** (email + password, Google; Oxford SSO later).
-2. **Store an OpenAI or Anthropic API key** that is encrypted at rest and never shown again.
-3. **Submit a research question plus a collection** and have Archos run it against *their* key.
+2. **Use the OxARCA team model key**, held by the engine, within a dollar cap an admin sets. (A per-user key vault was built and shelved; see the progress log.)
+3. **Submit a research question plus a collection** and have Archos run it.
 4. **Read the Evidence Report** in the browser and download it.
 5. **See their own token and dollar usage**.
 
 And where an admin (the OxARCA team) can:
 
-6. **Manage users**: invite, set roles, ban, revoke keys.
+6. **Manage users**: invite, set roles, ban.
 7. **Set budgets** per user (monthly USD cap, per-job cap, concurrency) and watch spend live.
 8. **See every job and every LLM call** in a ledger, with cost.
 
@@ -33,7 +33,7 @@ And where an admin (the OxARCA team) can:
 | Where does the Archos pipeline run? | **Separate Python "engine" on Modal** (or an Oxford VM with the same HTTP contract) | Vercel functions cap at 800 s on Pro (1,800 s beta). A real run takes far longer. Modal runs Python jobs up to 24 h and bills per second |
 | Authentication | **Better Auth** with the admin plugin | Owns your user table in your Postgres; Auth.js is now maintained by the same team; admin plugin gives roles, ban, list users, impersonate for free |
 | Database | **Neon Postgres via Vercel Marketplace**, Drizzle ORM | One-click provisioning, env vars injected, DB branching per preview deploy, EU/UK regions |
-| API key storage | **AES-256-GCM in Postgres; master key in a Vercel *sensitive* env var** | Plaintext never leaves the server; DB dump alone is useless; a compromised env var alone is useless. Cloud KMS is the upgrade path |
+| Model key | **One OxARCA team key per provider, held in the engine's Modal secrets**; per-user caps in dollars (decided 2026-09-12) | Historians need no API account, and admins control each user's spend. A per-user AES-256-GCM key vault is built and shelved on branch `key-vault`, in case users later bring their own keys |
 | Token control | **Own usage ledger in Postgres**, fed by both the web app and the engine; budgets enforced before and during a run | Provider-neutral, auditable, and works for user keys *and* a shared OxARCA key. Vercel AI Gateway is an optional add-on for observability |
 | File storage | **Vercel Blob** for uploaded collections and generated reports | Same dashboard and billing; private access; large-file client uploads |
 | Email | **Resend** | Verification and magic-link emails; generous free tier |
@@ -44,8 +44,8 @@ And where an admin (the OxARCA team) can:
 Browser ──► Next.js 16 on Vercel ──────────────┐
              │  Better Auth (sessions, roles)   │
              │  Drizzle ──► Neon Postgres       │   Modal (Python)
-             │  Key vault (AES-256-GCM)         ├──► Archos engine ──► OpenAI / Anthropic
-             │  Usage ledger + budgets          │        │ (user's key, in memory only)
+             │  Audit log                       ├──► Archos engine ──► OpenAI / Anthropic
+             │  Usage ledger + budgets          │        │ (team key, from Modal secrets)
              │  Vercel Blob (collections, reports) ◄─────┘ signed callbacks: progress, usage, result
              └─ Admin panel
 ```
@@ -58,7 +58,7 @@ Browser ──► Next.js 16 on Vercel ─────────────�
 | Neon Postgres | Free plan: 0.5 GB storage and 100 compute-hours per project per month. Launch plan is pay-as-you-go with no monthly minimum |
 | Modal | Starter plan: $0/month, $30 of free compute credit each month, then $0.0000131 per core-second and $0.00000222 per GiB-second. A 3-hour run on 2 cores and 4 GiB is about $0.38, so roughly 75 such runs a month fit in the free credit |
 | Vercel Blob, Resend, domain | A few dollars a month |
-| LLM tokens | Paid by the key owner. A headline run was ~$12.70 |
+| LLM tokens | Paid by OxARCA through the team key, capped per user. A headline run was ~$12.70 |
 
 ### Who bills whom
 
@@ -68,7 +68,7 @@ Three separate accounts, three separate bills. None of them flows through anothe
 |---|---|---|
 | Vercel (card on the team) | OxARCA | Pro seats; Neon, Blob, and any Marketplace add-ons appear on this same invoice |
 | Modal (card on the workspace) | OxARCA | Engine compute, per second, after the free monthly credit. Modal runs containers on its own fleet rented from the major clouds, not on Vercel; the `region` you set decides where |
-| OpenAI / Anthropic | The key owner | Tokens. A user's key bills the user; a shared OxARCA key bills OxARCA. Our ledger caps it, their console shows it |
+| OpenAI / Anthropic | OxARCA | Tokens, on the team key. Our ledger caps each user; a monthly limit set on the provider's project is the backstop |
 
 ## Reading order
 
@@ -83,3 +83,6 @@ Three separate accounts, three separate bills. None of them flows through anothe
 - **2026-09-11 — Phase 0 and the login half of Phase 1 are built** in `web/`. Next.js 16 scaffold with the site palette; Better Auth (email + password, optional Google, `admin` / `researcher` roles, `ADMIN_EMAILS` bootstrap, `ALLOWED_EMAIL_DOMAINS` allowlist); Drizzle schema and first migration; `proxy.ts` route protection; dashboard and a read-only admin user list. Type-check, lint and production build pass. A 24-check HTTP smoke test (`npm run test:smoke`) and a browser walkthrough of the forms both pass locally.
   Decision taken: **local development runs real Postgres from npm** (`npm run db:local`, the embedded-postgres package, port 5433), so there is no Docker or account to set up. The app talks to Postgres through node-postgres (`pg`) both locally and on Vercel, where the pool is registered with `attachDatabasePool` for Fluid Compute. An in-process PGlite database was tried first and dropped, because Next spawns helper processes that each opened the same data directory.
   Not yet done from Phase 1: email verification via Resend, the encrypted key vault, and the `/keys` page.
+- **2026-09-12 — Team key decided; admin ban and audit log built.** Decision: the pilot uses **one OxARCA team key**, held by the engine as a Modal secret, with **per-user caps in dollars** enforced by our usage ledger. The per-user key vault (AES-256-GCM, a `/keys` page, 26 unit tests) was built first and is shelved on branch `key-vault`; it was never tested in a browser, and its migration must be regenerated before it is revived.
+  On `main`: admins can ban and unban users from `/admin` (Better Auth signs a banned user out everywhere); each ban and unban is written to a new `audit_log` table; Vitest runs unit tests (`npm test`). Fixed a redirect loop: `proxy.ts` sent anyone with a session cookie from `/login` to `/dashboard`, even when the session behind the cookie had been deleted (as a ban does), so the two pages bounced forever. `/login` and `/signup` now check the real session instead.
+  Next: budgets and the usage ledger, moved ahead of Phase 2.

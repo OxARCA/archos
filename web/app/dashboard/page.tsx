@@ -36,9 +36,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             </dl>
           </Card>
 
-          <Placeholder title="Model keys" phase="Phase 1">
-            Store an OpenAI or Anthropic key, encrypted at rest. Nothing saved yet.
-          </Placeholder>
           <Placeholder title="Jobs" phase="Phase 2">
             Submit a research question over a collection and read the Evidence Report.
           </Placeholder>

@@ -14,6 +14,8 @@ Done when: a push to `main` deploys, `/api/internal/*` rejects unsigned calls, a
 
 ## Phase 1 — Login and the key vault (weeks 2–3)
 
+*Update 2026-09-12: the pilot uses one OxARCA team key, so the `/keys` page and the vault are shelved on branch `key-vault`. Phase 1 is now login, roles, ban and the audit log.*
+
 Deliverables
 - Better Auth with email + password (verified via Resend) and Google; admin plugin; `proxy.ts` protection; closed sign-up or domain allowlist.
 - `/keys` page: save with validation call, show `last4`, replace, remove. Vault module with AAD and versioned master key.
@@ -34,11 +36,13 @@ Done when: a historian submits a small real collection and reads the report in t
 
 ## Phase 3 — Budgets and the admin panel (weeks 5–6)
 
+*Update 2026-09-12: budgets and the admin controls come next, ahead of Phase 2, because every job will run on the team key and needs a per-user cap first. Caps are in dollars.*
+
 Deliverables
 - Budget enforcement in all three places; `over_budget` partial reports.
 - `/usage` for users; `/admin/users`, `/admin/users/[id]`, `/admin/jobs`, `/admin/usage`, `/admin/models`, `/admin/audit`.
 - Cron rollups and weekly key re-validation; alert emails at 80% / 100%.
-- Optional shared OxARCA key with `may_use_team_key`.
+- The shared OxARCA key is the default, and for the pilot the only, key.
 
 Done when: an admin can cap a user at $10, watch a job approach it, and see it stop.
 
@@ -58,7 +62,7 @@ Done when: an admin can cap a user at $10, watch a job approach it, and see it s
 
 ## Open questions for the team
 
-1. **Who pays for tokens in the pilot?** Users' own keys only, or does OxARCA also fund a shared key with per-user allowances? The design supports both; the answer sets the default budgets.
+1. **Who pays for tokens in the pilot?** Users' own keys only, or does OxARCA also fund a shared key with per-user allowances? The design supports both; the answer sets the default budgets. **Answered 2026-09-12: OxARCA's team key only, with per-user caps in dollars.**
 2. **Data residency.** Is UK/EU hosting sufficient for the collections partners will send, or do some require on-premises processing (which would mean the Oxford VM variant of the engine)?
 3. **Domain.** Is there an `oxarca.org`-style domain, or should we request an `ox.ac.uk` subdomain now given the lead time?
 4. **Default models.** Which Anthropic and OpenAI models does the pipeline currently use, and which should be selectable by users?
