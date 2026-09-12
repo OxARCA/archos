@@ -22,6 +22,7 @@ export async function SiteHeader() {
           {session ? (
             <>
               <NavLink href="/dashboard">Dashboard</NavLink>
+              <NavLink href="/keys">API keys</NavLink>
               {session.user.role === "admin" ? <NavLink href="/admin">Admin</NavLink> : null}
               <span className="hidden px-2 text-muted sm:inline">{session.user.email}</span>
               <SignOutButton />

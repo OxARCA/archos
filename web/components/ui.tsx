@@ -73,6 +73,15 @@ export function Card({ className, ...props }: ComponentProps<"div">) {
   );
 }
 
+export function Row({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex justify-between gap-4">
+      <dt className="text-muted">{label}</dt>
+      <dd className="text-right text-fg">{children}</dd>
+    </div>
+  );
+}
+
 export function ErrorText({ children }: { children: ReactNode }) {
   if (!children) return null;
   return (

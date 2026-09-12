@@ -3,7 +3,8 @@
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { attachDatabasePool } from "@vercel/functions";
-import * as schema from "./schema";
+import * as appSchema from "./app-schema";
+import * as authSchema from "./schema";
 
 /**
  * Database access over the standard Postgres protocol (node-postgres).
@@ -18,6 +19,9 @@ import * as schema from "./schema";
  * route modules while collecting page data. Queries against the mock throw,
  * so a running server still needs the real URL.
  */
+// Better Auth's generated tables plus ours.
+const schema = { ...authSchema, ...appSchema };
+
 export type Database = NodePgDatabase<typeof schema>;
 
 declare global {

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
-import { Card } from "@/components/ui";
+import { Card, Row } from "@/components/ui";
+import { listSavedKeys } from "@/lib/provider-keys";
+import { PROVIDER_IDS, PROVIDERS } from "@/lib/providers";
 import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -9,6 +12,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const session = await requireSession("/dashboard");
   const { denied } = await searchParams;
   const { user } = session;
+  const keys = await listSavedKeys(user.id);
 
   return (
     <>
@@ -36,9 +40,24 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             </dl>
           </Card>
 
-          <Placeholder title="Model keys" phase="Phase 1">
-            Store an OpenAI or Anthropic key, encrypted at rest. Nothing saved yet.
-          </Placeholder>
+          <Card>
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 className="text-sm font-semibold tracking-wide text-muted uppercase">Model keys</h2>
+              <Link href="/keys" className="text-sm text-accent">
+                Manage
+              </Link>
+            </div>
+            <dl className="mt-3 space-y-2 text-sm">
+              {PROVIDER_IDS.map((provider) => {
+                const key = keys.find((k) => k.provider === provider);
+                return (
+                  <Row key={provider} label={PROVIDERS[provider].name}>
+                    {key ? <span className="font-mono">••••{key.last4}</span> : "not set"}
+                  </Row>
+                );
+              })}
+            </dl>
+          </Card>
           <Placeholder title="Jobs" phase="Phase 2">
             Submit a research question over a collection and read the Evidence Report.
           </Placeholder>
@@ -48,15 +67,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         </div>
       </main>
     </>
-  );
-}
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex justify-between gap-4">
-      <dt className="text-muted">{label}</dt>
-      <dd className="text-right text-fg">{children}</dd>
-    </div>
   );
 }
 
