@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/* Palette lifted from oxarca.github.io so the app matches the site. */
+@theme {
+  --color-oxford-100: #dae3ef;
+  --color-oxford-200: #b4c6dd;
+  --color-oxford-300: #85a3c6;
+  --color-oxford-400: #547ead;
+  --color-oxford-500: #2f5c8f;
+  --color-oxford-600: #1b4374;
+  --color-oxford-700: #0d305b;
+  --color-oxford-800: #042546;
+  --color-oxford-900: #002147;
+  --color-oxford-950: #00152e;
+
+  --color-parchment-50: #fdfcf9;
+  --color-parchment-100: #faf7f0;
+  --color-parchment-200: #f2ece0;
+  --color-parchment-300: #e6dcc9;
+
+  --color-bronze-300: #c9a45c;
+  --color-bronze-400: #a67c2c;
+  --color-bronze-500: #8a6520;
+
+  --font-display: var(--font-newsreader), "Iowan Old Style", Georgia, serif;
+  --font-sans: var(--font-source-sans), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Semantic tokens that flip with the colour scheme. */
+:root {
+  --bg: var(--color-parchment-100);
+  --surface: var(--color-parchment-50);
+  --surface-2: var(--color-parchment-200);
+  --fg: var(--color-oxford-900);
+  --fg-2: var(--color-oxford-600);
+  --muted: var(--color-oxford-500);
+  --line: var(--color-oxford-200);
+  --line-soft: var(--color-oxford-100);
+  --accent: var(--color-bronze-500);
+  --accent-fg: var(--color-parchment-50);
+  --primary: var(--color-oxford-900);
+  --primary-fg: var(--color-parchment-50);
+  --danger: #9b2c2c;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: var(--color-oxford-950);
+    --surface: var(--color-oxford-800);
+    --surface-2: var(--color-oxford-700);
+    --fg: var(--color-parchment-100);
+    --fg-2: var(--color-oxford-100);
+    --muted: var(--color-oxford-200);
+    --line: var(--color-oxford-600);
+    --line-soft: var(--color-oxford-700);
+    --accent: var(--color-bronze-300);
+    --accent-fg: var(--color-oxford-950);
+    --primary: var(--color-parchment-100);
+    --primary-fg: var(--color-oxford-950);
+    --danger: #f2a4a4;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-danger: var(--danger);
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3 {
+  text-wrap: balance;
+}
