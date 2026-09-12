@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { signIn, signUp } from "@/lib/auth-client";
 import { Button, ErrorText, Field, Input } from "@/components/ui";
 
-export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
+export function SignupForm({ googleEnabled, emailHint }: { googleEnabled: boolean; emailHint: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -43,7 +43,7 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
       <Field label="Name" htmlFor="name">
         <Input id="name" name="name" autoComplete="name" required />
       </Field>
-      <Field label="Email" htmlFor="email" hint="Use your institutional address if you have one.">
+      <Field label="Email" htmlFor="email" hint={emailHint}>
         <Input id="email" name="email" type="email" autoComplete="email" required />
       </Field>
       <Field label="Password" htmlFor="password" hint="At least 10 characters.">

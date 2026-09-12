@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
+import { signUpPolicy } from "@/lib/auth";
 import { getSession } from "@/lib/session";
 
 export default async function Home() {
@@ -15,9 +16,8 @@ export default async function Home() {
             An epistemically grounded LLM system for archival exploration
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-fg-2">
-            Run Archos over your own collection with your own model key. Every claim stays
-            traceable to a specific document, every ambiguity is left standing, and every
-            token you spend is accounted for.
+            Run Archos over your own collection. Every claim stays traceable to a specific
+            document, every ambiguity is left standing, and every token is accounted for.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             {session ? (
@@ -54,10 +54,11 @@ export default async function Home() {
 
         <section className="mt-16 grid gap-4 sm:grid-cols-3">
           <Step n="1" title="Sign in">
-            Email and password today; Google sign-in when configured; Oxford SSO later.
+            {signUpPolicy.open ? "Create an account" : "By invitation from the OxARCA team"}. Email
+            and password today; Google and Oxford SSO later.
           </Step>
-          <Step n="2" title="Add your model key">
-            An OpenAI or Anthropic key, encrypted at rest and never shown again.
+          <Step n="2" title="Get a budget">
+            An OxARCA admin sets how much model usage your account can spend.
           </Step>
           <Step n="3" title="Run and read">
             Submit a research question and a collection; read the Evidence Report with its citations.

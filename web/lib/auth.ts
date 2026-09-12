@@ -16,7 +16,19 @@ function csv(value: string | undefined): string[] {
 }
 
 const adminEmails = csv(process.env.ADMIN_EMAILS);
-const allowedDomains = csv(process.env.ALLOWED_EMAIL_DOMAINS);
+// Sign-up is by invitation: admins and these addresses may create an account.
+const invitedEmails = csv(process.env.ALLOWED_EMAILS);
+// Open registration (off unless OPEN_REGISTRATION=true) also admits anyone at these
+// domains or their subdomains. It never opens sign-up to everyone: with no domain
+// listed it admits nobody extra.
+const openDomains = csv(process.env.ALLOWED_EMAIL_DOMAINS).map((d) => d.replace(/^@/, ""));
+const openRegistrationRequested = process.env.OPEN_REGISTRATION?.trim().toLowerCase() === "true";
+const registrationOpen = openRegistrationRequested && openDomains.length > 0;
+if (openRegistrationRequested && !registrationOpen) {
+  console.warn(
+    "[auth] OPEN_REGISTRATION is true but ALLOWED_EMAIL_DOMAINS is empty, so sign-up stays invitation-only.",
+  );
+}
 
 function baseURL(): string {
   if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
@@ -39,6 +51,26 @@ const googleConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOO
 
 export const ROLES = ["admin", "researcher"] as const;
 export type Role = (typeof ROLES)[number];
+
+/** How sign-up works right now; the sign-up page uses it to explain itself. */
+export const signUpPolicy: { open: boolean; domains: readonly string[] } = {
+  open: registrationOpen,
+  domains: openDomains,
+};
+
+function atOpenDomain(address: string): boolean {
+  const domain = address.split("@")[1] ?? "";
+  return openDomains.some((d) => domain === d || domain.endsWith(`.${d}`));
+}
+
+/** The role for a new account, or null when the address may not sign up. */
+export function roleForNewAccount(email: string): Role | null {
+  const address = email.trim().toLowerCase();
+  if (adminEmails.includes(address)) return "admin";
+  if (invitedEmails.includes(address)) return "researcher";
+  if (registrationOpen && atOpenDomain(address)) return "researcher";
+  return null;
+}
 
 export const auth = betterAuth({
   appName: "Archos",
@@ -67,17 +99,14 @@ export const auth = betterAuth({
       create: {
         // Runs for every new account, whatever the sign-up method.
         before: async (user) => {
-          const email = user.email.toLowerCase();
-          const domain = email.split("@")[1] ?? "";
-
-          if (allowedDomains.length > 0 && !allowedDomains.includes(domain)) {
+          const role = roleForNewAccount(user.email);
+          if (!role) {
             throw new APIError("FORBIDDEN", {
-              message:
-                "Sign-up is limited to invited institutions. Contact the OxARCA team for access.",
+              message: registrationOpen
+                ? `Sign-up is open to addresses at ${openDomains.join(", ")}. For another address, ask the OxARCA team to invite you.`
+                : "Sign-up is by invitation only. Ask the OxARCA team to add your email address.",
             });
           }
-
-          const role: Role = adminEmails.includes(email) ? "admin" : "researcher";
           return { data: { ...user, role } };
         },
       },

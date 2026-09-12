@@ -2,7 +2,8 @@
 # End-to-end smoke test for login and route protection against a running server.
 #
 # Usage:  BASE=http://localhost:3000 bash scripts/smoke-auth.sh
-# Needs:  a running server whose .env.local lists admin@example.com in ADMIN_EMAILS.
+# Needs:  a running server whose .env.local lists admin@example.com in ADMIN_EMAILS and
+#         researcher@example.com in ALLOWED_EMAILS (as .env.example does).
 #         Re-runnable: the two example accounts are created on the first run and
 #         signed into on later runs (password: correct-horse-battery).
 set -u
@@ -49,6 +50,9 @@ check "short password → 400" 400 "$(code -H 'content-type: application/json' -
 
 echo "== duplicate email is rejected"
 check "duplicate → 422" 422 "$(code -H 'content-type: application/json' -H "origin: $BASE" -d '{"name":"x","email":"admin@example.com","password":"correct-horse-battery"}' $BASE/api/auth/sign-up/email)"
+
+echo "== sign-up is by invitation"
+check "uninvited sign-up → 403" 403 "$(code -H 'content-type: application/json' -H "origin: $BASE" -d '{"name":"x","email":"stranger@example.com","password":"correct-horse-battery"}' $BASE/api/auth/sign-up/email)"
 
 echo "== session + roles"
 S=$(curl -s -b $J/admin.txt "$BASE/api/auth/get-session")

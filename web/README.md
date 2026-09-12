@@ -7,7 +7,9 @@ model keys, job submission and usage control. The Python pipeline runs separatel
 ## Status
 
 - [x] Scaffold: Next.js 16 (App Router, TypeScript, Turbopack), Tailwind v4 with the OxARCA palette
-- [x] Login: Better Auth with email + password, optional Google, roles (`admin`, `researcher`)
+- [x] Login: Better Auth with email + password, optional Google, roles (`admin`, `researcher`),
+  sign-up by invitation (`ADMIN_EMAILS`, `ALLOWED_EMAILS`), optional open registration by domain
+  (`OPEN_REGISTRATION`, `ALLOWED_EMAIL_DOMAINS`; off by default)
 - [x] Database: Drizzle ORM over node-postgres; Neon on Vercel, embedded Postgres locally (`npm run db:local`)
 - [x] Route protection (`proxy.ts`) and a server-side session layer (`lib/session.ts`)
 - [x] Dashboard, and an admin user list with ban and unban
@@ -33,7 +35,9 @@ sed -i "s|^BETTER_AUTH_SECRET=.*|BETTER_AUTH_SECRET=$(openssl rand -base64 32)|"
 ```
 
 Then edit `ADMIN_EMAILS` in `.env.local`: add your own email after `admin@example.com`,
-comma-separated. Whoever signs up with a listed email becomes an admin.
+comma-separated. Whoever signs up with a listed email becomes an admin. Sign-up is by
+invitation: only addresses in `ADMIN_EMAILS` or `ALLOWED_EMAILS` can create an account.
+`OPEN_REGISTRATION=true` also lets anyone at `ALLOWED_EMAIL_DOMAINS` sign up; it is off by default.
 
 **Every time**
 
@@ -64,12 +68,14 @@ npm run db:studio                   # browse the tables
 ```
 
 The smoke test uses `admin@example.com` and `researcher@example.com` with the password
-`correct-horse-battery`, so keep `admin@example.com` in `ADMIN_EMAILS`. It is safe to re-run.
+`correct-horse-battery`, so keep `admin@example.com` in `ADMIN_EMAILS` and
+`researcher@example.com` in `ALLOWED_EMAILS`. It is safe to re-run.
 
 **By hand in the browser**
 
 1. Signed out, open `/dashboard`. You land on the sign-in page.
-2. Create an account. The dashboard shows your role.
+2. Create an account with an invited address (in `ADMIN_EMAILS` or `ALLOWED_EMAILS`). The
+   dashboard shows your role. Any other address is refused.
 3. As a researcher, open `/admin`. You are sent back with "That page is for administrators only."
 4. Sign out, then sign in with a wrong password. An error appears under the form.
 5. Sign in with an `ADMIN_EMAILS` account. The Admin link appears and lists every user.
@@ -100,7 +106,9 @@ Schema workflow: our tables live in `db/app-schema.ts`. Better Auth's are genera
 1. Import the repository; set **Root Directory** to `web`.
 2. Storage → create **Neon** (London or Frankfurt); `DATABASE_URL` is injected.
 3. Environment variables (mark secrets *Sensitive*): `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
-   `ADMIN_EMAILS`, optionally `ALLOWED_EMAIL_DOMAINS`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+   `ADMIN_EMAILS`, `ALLOWED_EMAILS` (everyone else who may sign up), and optionally
+   `OPEN_REGISTRATION` with `ALLOWED_EMAIL_DOMAINS` (leave unset to keep it off),
+   `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
 4. Deploy. The build script applies migrations before `next build`.
 
 Full deployment notes: `../notes/04-tools-and-vercel-deployment.md`.
