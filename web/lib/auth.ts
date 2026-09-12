@@ -24,6 +24,17 @@ function baseURL(): string {
   return "http://localhost:3000";
 }
 
+/**
+ * Vercel serves each deployment at several addresses: its own URL, its branch
+ * URL and the project's production domain. Better Auth refuses sign-ins from
+ * any origin it doesn't trust, so list them all. Empty outside Vercel.
+ */
+function vercelOrigins(): string[] {
+  return [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]
+    .filter((host): host is string => Boolean(host))
+    .map((host) => `https://${host}`);
+}
+
 const googleConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
 export const ROLES = ["admin", "researcher"] as const;
@@ -32,6 +43,7 @@ export type Role = (typeof ROLES)[number];
 export const auth = betterAuth({
   appName: "Archos",
   baseURL: baseURL(),
+  trustedOrigins: vercelOrigins(),
   database: drizzleAdapter(db, { provider: "pg", schema, transaction: true }),
 
   emailAndPassword: {

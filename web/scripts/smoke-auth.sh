@@ -68,6 +68,7 @@ check "admin page lists the researcher" yes "$(curl -s -b $J/admin.txt $BASE/adm
 echo "== sign out, then sign in again"
 check "sign-out" 200 "$(code -b $J/res.txt -c $J/res.txt -X POST -H 'content-type: application/json' -H "origin: $BASE" -d '{}' $BASE/api/auth/sign-out)"
 check "after sign-out /dashboard redirects" 307 "$(code -b $J/res.txt $BASE/dashboard)"
+check "sign-in from another site → 403" 403 "$(code -H 'content-type: application/json' -H 'origin: https://evil.example.com' -d '{"email":"researcher@example.com","password":"correct-horse-battery"}' $BASE/api/auth/sign-in/email)"
 check "wrong password → 401" 401 "$(code -H 'content-type: application/json' -H "origin: $BASE" -d '{"email":"researcher@example.com","password":"wrong-password-here"}' $BASE/api/auth/sign-in/email)"
 check "sign-in" 200 "$(code -c $J/res.txt -H 'content-type: application/json' -H "origin: $BASE" -d '{"email":"researcher@example.com","password":"correct-horse-battery"}' $BASE/api/auth/sign-in/email)"
 check "after sign-in /dashboard" 200 "$(code -b $J/res.txt $BASE/dashboard)"
