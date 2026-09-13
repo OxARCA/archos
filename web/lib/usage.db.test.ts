@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { auditLog, usageEvents } from "@/db/app-schema";
 import { user } from "@/db/schema";
 import { budgetStatus, setBudget } from "./budget";
-import type { TokenUsage } from "./prices";
+import { savePrice, type TokenUsage } from "./prices";
 import { recordUsage, usageByModelThisMonth } from "./usage";
 
 const none: TokenUsage = {
@@ -91,6 +91,41 @@ describe("recordUsage", () => {
     expect(await usageByModelThisMonth(userId)).toEqual([
       expect.objectContaining({ model: "not-priced", calls: 1, unpricedCalls: 1, costMicroUsd: 0 }),
     ]);
+  });
+
+  it("charges batch calls at the model's batch discount, and marks them", async () => {
+    const userId = await newUser();
+    const result = await recordUsage({
+      eventId: randomUUID(),
+      userId,
+      provider: "anthropic",
+      model: "claude-opus-5",
+      batch: true,
+      usage: { ...none, inputTokens: 1_000_000, outputTokens: 100_000 },
+    });
+
+    expect(result.costMicroUsd).toBe(3_750_000);
+    const [row] = await db.select().from(usageEvents).where(eq(usageEvents.userId, userId));
+    expect(row.batch).toBe(true);
+  });
+
+  it("prices a model from the next call once an admin adds it", async () => {
+    const userId = await userWithCap(TEN_DOLLARS);
+    const adminId = await newUser();
+    const model = `new-model-${randomUUID()}`;
+    const call = () =>
+      recordUsage({ eventId: randomUUID(), userId, provider: "openai", model, usage: { ...none, inputTokens: 1_000_000 } });
+
+    expect((await call()).costMicroUsd).toBeNull();
+    await savePrice(adminId, "openai", model, {
+      input: 1,
+      output: 6,
+      cacheRead: 0.1,
+      cacheWrite5m: 0,
+      cacheWrite1h: 0,
+      batchDiscountPercent: 50,
+    });
+    expect(await call()).toMatchObject({ costMicroUsd: 1_000_000, remainingMicroUsd: 9_000_000 });
   });
 
   it("refuses negative or fractional token counts", async () => {

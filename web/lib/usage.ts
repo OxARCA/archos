@@ -4,7 +4,7 @@ import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { usageEvents } from "@/db/app-schema";
 import { budgetStatus, monthStart } from "./budget";
-import { costMicroUsd, priceFor, type TokenUsage } from "./prices";
+import { costMicroUsd, getPrice, type TokenUsage } from "./prices";
 
 /** One model call, as the engine (or a web feature) reports it. */
 export type UsageReport = {
@@ -15,6 +15,8 @@ export type UsageReport = {
   provider: string;
   model: string;
   stage?: string | null;
+  /** Sent through the provider's Batch API, which bills at a discount. */
+  batch?: boolean;
   usage: TokenUsage;
 };
 
@@ -30,8 +32,9 @@ export async function recordUsage(report: UsageReport): Promise<RecordResult> {
     if (!Number.isSafeInteger(count) || count < 0) throw new Error(`Invalid ${field}: ${count}`);
   }
 
-  const price = priceFor(report.provider, report.model);
-  const cost = price ? costMicroUsd(price, report.usage) : null;
+  const price = await getPrice(report.provider, report.model);
+  const batch = report.batch ?? false;
+  const cost = price ? costMicroUsd(price, report.usage, batch) : null;
 
   const inserted = await db
     .insert(usageEvents)
@@ -42,6 +45,7 @@ export async function recordUsage(report: UsageReport): Promise<RecordResult> {
       provider: report.provider,
       model: report.model,
       stage: report.stage ?? null,
+      batch,
       ...report.usage,
       costMicroUsd: cost,
     })
@@ -56,6 +60,7 @@ export type ModelUsage = {
   provider: string;
   model: string;
   calls: number;
+  batchCalls: number;
   /** All input: uncached, read from cache and written to cache. */
   inputTokens: number;
   outputTokens: number;
@@ -72,6 +77,7 @@ export async function usageByModelThisMonth(userId?: string): Promise<ModelUsage
       provider: usageEvents.provider,
       model: usageEvents.model,
       calls: sql<number>`count(*)`.mapWith(Number),
+      batchCalls: sql<number>`count(*) filter (where ${usageEvents.batch})`.mapWith(Number),
       inputTokens: sql<number>`coalesce(sum(${usageEvents.inputTokens} + ${usageEvents.cacheReadTokens} + ${usageEvents.cacheWrite5mTokens} + ${usageEvents.cacheWrite1hTokens}), 0)`.mapWith(
         Number,
       ),
@@ -90,6 +96,7 @@ export type UsageRow = {
   provider: string;
   model: string;
   stage: string | null;
+  batch: boolean;
   inputTokens: number;
   outputTokens: number;
   costMicroUsd: number | null;
@@ -103,6 +110,7 @@ export async function recentUsage(userId: string, limit = 20): Promise<UsageRow[
       provider: usageEvents.provider,
       model: usageEvents.model,
       stage: usageEvents.stage,
+      batch: usageEvents.batch,
       inputTokens: sql<number>`${usageEvents.inputTokens} + ${usageEvents.cacheReadTokens} + ${usageEvents.cacheWrite5mTokens} + ${usageEvents.cacheWrite1hTokens}`.mapWith(
         Number,
       ),

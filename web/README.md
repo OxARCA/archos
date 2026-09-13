@@ -16,7 +16,7 @@ model keys, job submission and usage control. The Python pipeline runs separatel
 - [x] Audit log of admin actions (`audit_log` table)
 - [x] Unit tests with Vitest (`npm test`)
 - [x] Budgets and usage tracking: per-user monthly caps in dollars (set on `/admin/users/[id]`), a
-  usage ledger, `/usage` for each person, model prices in `lib/prices.ts`
+  usage ledger, `/usage` for each person, model prices (with batch discounts) edited on `/admin/prices`
 - [ ] Jobs and engine integration, including the signed endpoint where the engine reports usage
 
 The pilot runs on one OxARCA team key held by the engine, with per-user dollar caps. A per-user
@@ -85,6 +85,8 @@ The smoke test uses `admin@example.com` and `researcher@example.com` with the pa
    cannot sign in until you press **Unban**.
 7. As an admin, open a user and set their monthly cap. They see it, and what they have spent,
    on `/usage`.
+8. As an admin, open **Model prices** on `/admin` to add a model or change its rates and batch
+   discount. Changes apply from the next recorded call.
 
 ## Scripts
 
@@ -131,7 +133,7 @@ lib/auth.ts           Better Auth server config
 lib/auth-client.ts    Better Auth React client
 lib/session.ts        session helpers for server components and actions
 lib/audit.ts          writes audit_log entries
-lib/prices.ts         model prices per million tokens
+lib/prices.ts         model prices (model_prices table) and what a call costs
 lib/budget.ts         caps, spend this month, what is left
 lib/usage.ts          the usage ledger: record a model call, summaries
 lib/money.ts          dollars ↔ micro-dollars

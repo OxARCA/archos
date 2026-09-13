@@ -3,12 +3,12 @@ import "server-only";
 import { db, type Database } from "@/db";
 import { auditLog } from "@/db/app-schema";
 
-export type AuditAction = "user.banned" | "user.unbanned" | "budget.changed";
+export type AuditAction = "user.banned" | "user.unbanned" | "budget.changed" | "price.changed" | "price.removed";
 
 type AuditEntry = {
   actorId: string;
   action: AuditAction;
-  targetType: "user";
+  targetType: "user" | "model_price";
   targetId: string;
   // Never put secrets here.
   metadata?: Record<string, unknown>;

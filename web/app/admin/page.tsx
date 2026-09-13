@@ -7,7 +7,6 @@ import { Card } from "@/components/ui";
 import { auth } from "@/lib/auth";
 import { allBudgets, teamCapMicroUsd } from "@/lib/budget";
 import { formatUsd } from "@/lib/money";
-import { PRICES, PRICES_CHECKED_ON } from "@/lib/prices";
 import { requireAdmin } from "@/lib/session";
 import { spentThisMonthByUser } from "@/lib/usage";
 
@@ -15,7 +14,6 @@ export const metadata: Metadata = { title: "Admin" };
 
 const cell = "px-4 py-3";
 const headCell = "px-4 py-3 font-medium";
-const perMillion = (usd: number) => `$${usd.toFixed(2)}`;
 
 export default async function AdminPage() {
   const session = await requireAdmin();
@@ -44,6 +42,10 @@ export default async function AdminPage() {
         <p className="mt-2 text-fg">
           Team spend this month: <strong>{formatUsd(teamSpent)}</strong>
           {teamCap === null ? " (no team-wide cap)" : ` of ${formatUsd(teamCap)} team cap`}
+          {" · "}
+          <Link href="/admin/prices" className="text-accent">
+            Model prices
+          </Link>
         </p>
 
         <Card className="mt-8 overflow-x-auto p-0">
@@ -91,38 +93,6 @@ export default async function AdminPage() {
                         <BanButton userId={u.id} email={u.email} banned={Boolean(u.banned)} />
                       )}
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-
-        <h2 className="mt-12 font-display text-xl font-semibold text-fg">Model prices</h2>
-        <p className="mt-1 text-sm text-fg-2">
-          US$ per million tokens, checked on {PRICES_CHECKED_ON}. A model not listed here has no price,
-          so a job using it stops at once. Prices live in <code>lib/prices.ts</code>.
-        </p>
-        <Card className="mt-4 overflow-x-auto p-0">
-          <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
-            <thead>
-              <tr className="bg-surface-2 text-xs tracking-wide text-muted uppercase">
-                <th className={headCell}>Model</th>
-                <th className={`${headCell} text-right`}>Input</th>
-                <th className={`${headCell} text-right`}>Output</th>
-                <th className={`${headCell} text-right`}>Cache read</th>
-                <th className={`${headCell} text-right`}>Cache write (5 min / 1 h)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(PRICES).map(([key, p]) => (
-                <tr key={key} className="border-t border-line-soft">
-                  <td className={`${cell} text-fg`}>{key}</td>
-                  <td className={`${cell} text-right text-fg-2`}>{perMillion(p.input)}</td>
-                  <td className={`${cell} text-right text-fg-2`}>{perMillion(p.output)}</td>
-                  <td className={`${cell} text-right text-fg-2`}>{perMillion(p.cacheRead)}</td>
-                  <td className={`${cell} text-right text-fg-2`}>
-                    {perMillion(p.cacheWrite5m)} / {perMillion(p.cacheWrite1h)}
                   </td>
                 </tr>
               ))}

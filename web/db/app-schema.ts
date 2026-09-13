@@ -1,4 +1,16 @@
-import { bigint, index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  bigint,
+  boolean,
+  index,
+  integer,
+  jsonb,
+  numeric,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { user } from "./schema";
 
 /**
@@ -39,6 +51,28 @@ export const budgets = pgTable("budgets", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+const perMillion = (name: string) => numeric(name, { precision: 12, scale: 4, mode: "number" });
+
+/** Model prices in US dollars per million tokens, edited on /admin/prices. */
+export const modelPrices = pgTable(
+  "model_prices",
+  {
+    provider: text("provider").notNull(),
+    // Exactly the model ID the engine reports, e.g. claude-opus-5.
+    model: text("model").notNull(),
+    input: perMillion("input").notNull(),
+    output: perMillion("output").notNull(),
+    cacheRead: perMillion("cache_read").notNull().default(0),
+    cacheWrite5m: perMillion("cache_write_5m").notNull().default(0),
+    cacheWrite1h: perMillion("cache_write_1h").notNull().default(0),
+    // Percent off every token for calls sent through the provider's Batch API.
+    batchDiscountPercent: integer("batch_discount_percent").notNull().default(50),
+    updatedBy: text("updated_by").references(() => user.id, { onDelete: "set null" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.provider, table.model] })],
+);
+
 /** The ledger: one row per model call, never edited. */
 export const usageEvents = pgTable(
   "usage_events",
@@ -54,6 +88,8 @@ export const usageEvents = pgTable(
     provider: text("provider").notNull(),
     model: text("model").notNull(),
     stage: text("stage"),
+    // Sent through the provider's Batch API, which bills at a discount.
+    batch: boolean("batch").notNull().default(false),
     inputTokens: integer("input_tokens").notNull().default(0),
     outputTokens: integer("output_tokens").notNull().default(0),
     cacheReadTokens: integer("cache_read_tokens").notNull().default(0),

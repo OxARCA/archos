@@ -6,7 +6,8 @@ import { headers } from "next/headers";
 import { recordAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth";
 import { setBudget } from "@/lib/budget";
-import { formatUsd, MICRO_PER_USD, parseUsd } from "@/lib/money";
+import { formatUsd, MICRO_PER_USD, parseRate, parseUsd } from "@/lib/money";
+import { removePrice, savePrice } from "@/lib/prices";
 import { requireAdmin } from "@/lib/session";
 
 export type BanState = { error: string | null };
@@ -75,4 +76,65 @@ export async function saveBudgetAction(_prev: BudgetFormState, formData: FormDat
     status: "saved",
     message: `Saved. Monthly cap ${formatUsd(monthly)}, per-job cap ${formatUsd(perJob)}.`,
   };
+}
+
+export type PriceFormState = {
+  status: "idle" | "saved" | "error";
+  message: string;
+  // What was typed, so a refused entry stays in the fields.
+  entered?: Record<string, string>;
+};
+
+const RATE_FIELDS = ["input", "output", "cacheRead", "cacheWrite5m", "cacheWrite1h"] as const;
+
+/** Adds a model's prices or changes them. Prices are US$ per million tokens. */
+export async function savePriceAction(_prev: PriceFormState, formData: FormData): Promise<PriceFormState> {
+  const session = await requireAdmin();
+  const entered = Object.fromEntries(
+    ["provider", "model", ...RATE_FIELDS, "batchDiscountPercent"].map((name) => [
+      name,
+      String(formData.get(name) ?? "").trim(),
+    ]),
+  );
+  const fail = (message: string): PriceFormState => ({ status: "error", message, entered });
+
+  const provider = entered.provider.toLowerCase();
+  const { model } = entered;
+  if (!/^[a-z0-9-]{1,40}$/.test(provider)) return fail("Enter the provider in lower case, like openai.");
+  if (!/^[\w.:/-]{1,100}$/.test(model)) {
+    return fail("Enter the model ID exactly as the engine reports it, with no spaces.");
+  }
+
+  // Cache prices may be left blank when a model doesn't charge for them.
+  const rates = RATE_FIELDS.map((name) =>
+    entered[name] === "" && name.startsWith("cache") ? 0 : parseRate(entered[name]),
+  );
+  if (rates.some((rate) => rate === null)) {
+    return fail("Enter each price in US$ per million tokens, like 5 or 0.075.");
+  }
+  if (!/^\d{1,3}$/.test(entered.batchDiscountPercent) || Number(entered.batchDiscountPercent) > 100) {
+    return fail("The batch discount is a whole percent from 0 to 100.");
+  }
+
+  const [input, output, cacheRead, cacheWrite5m, cacheWrite1h] = rates as number[];
+  await savePrice(session.user.id, provider, model, {
+    input,
+    output,
+    cacheRead,
+    cacheWrite5m,
+    cacheWrite1h,
+    batchDiscountPercent: Number(entered.batchDiscountPercent),
+  });
+  revalidatePath("/admin/prices");
+  return { status: "saved", message: `Saved ${provider} ${model}.` };
+}
+
+export async function removePriceAction(formData: FormData): Promise<void> {
+  const session = await requireAdmin();
+  const provider = String(formData.get("provider") ?? "");
+  const model = String(formData.get("model") ?? "");
+  if (!provider || !model) return;
+
+  await removePrice(session.user.id, provider, model);
+  revalidatePath("/admin/prices");
 }

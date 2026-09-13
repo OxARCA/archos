@@ -19,6 +19,8 @@ Streaming responses still deliver a final usage object; record it when the strea
 
 ## Price table
 
+*Update 2026-09-13: prices now live in the `model_prices` table and are edited on `/admin/prices`, so they change without a deploy, and every change is audited. Each call also records whether it went through the Batch API; batch calls are charged at the model's batch discount (usually 50%). The code sketch below was the original plan.*
+
 Keep it in code, versioned, with a `verified_on` date. Prices are per million tokens. Anthropic first-party rates as of the last check (2026-06): Opus 5 $5 in / $25 out; Sonnet 5 $2 / $10; Haiku 4.5 $1 / $5; cache reads are typically 10% of input and cache writes 125%. Fill in the OpenAI rows from their pricing page on the day you set them.
 
 ```ts

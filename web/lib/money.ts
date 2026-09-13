@@ -21,3 +21,18 @@ export function formatUsd(micro: number): string {
   if (micro !== 0 && Math.abs(usd) < 0.01) return `$${usd.toFixed(6).replace(/0+$/, "")}`;
   return usd.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
+
+/** A price in US dollars per million tokens: up to four decimals, at most $10,000. Null otherwise. */
+export function parseRate(input: unknown): number | null {
+  if (typeof input !== "string") return null;
+  const text = input.trim().replace(/^\$/, "");
+  if (!/^\d{1,5}(\.\d{1,4})?$/.test(text)) return null;
+  const rate = Number(text);
+  return rate <= 10_000 ? rate : null;
+}
+
+/** A price per million tokens: "$6.25", "$0.075", "$10.00". */
+export function formatRate(usd: number): string {
+  const [whole, fraction = ""] = usd.toFixed(4).split(".");
+  return `$${whole}.${fraction.replace(/0+$/, "").padEnd(2, "0")}`;
+}

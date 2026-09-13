@@ -69,7 +69,10 @@ export function UsageByModel({ rows }: { rows: ModelUsage[] }) {
                 <td className="px-4 py-3 text-fg">
                   {r.model} <span className="text-xs text-muted">{r.provider}</span>
                 </td>
-                <td className="px-4 py-3 text-right text-fg-2">{tokens(r.calls)}</td>
+                <td className="px-4 py-3 text-right text-fg-2">
+                  {tokens(r.calls)}
+                  {r.batchCalls > 0 ? <span className="block text-xs text-muted">{r.batchCalls} batch</span> : null}
+                </td>
                 <td className="px-4 py-3 text-right text-fg-2">{tokens(r.inputTokens)}</td>
                 <td className="px-4 py-3 text-right text-fg-2">{tokens(r.outputTokens)}</td>
                 <td className="px-4 py-3 text-right text-fg">
@@ -109,7 +112,12 @@ export function RecentCalls({ rows }: { rows: UsageRow[] }) {
               <td className="px-4 py-3 text-fg-2">
                 {r.createdAt.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })}
               </td>
-              <td className="px-4 py-3 text-fg">{r.model}</td>
+              <td className="px-4 py-3 text-fg">
+                {r.model}
+                {r.batch ? (
+                  <span className="ml-2 rounded-full border border-line px-1.5 py-0.5 text-xs text-muted">batch</span>
+                ) : null}
+              </td>
               <td className="px-4 py-3 text-fg-2">{r.stage ?? "–"}</td>
               <td className="px-4 py-3 text-right text-fg-2">{tokens(r.inputTokens)}</td>
               <td className="px-4 py-3 text-right text-fg-2">{tokens(r.outputTokens)}</td>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatUsd, parseUsd } from "./money";
+import { formatRate, formatUsd, parseRate, parseUsd } from "./money";
 
 describe("parseUsd", () => {
   it("reads dollar amounts into micro-dollars", () => {
@@ -26,5 +26,27 @@ describe("formatUsd", () => {
   it("keeps costs under a cent visible", () => {
     expect(formatUsd(2_100)).toBe("$0.0021");
     expect(formatUsd(30)).toBe("$0.00003");
+  });
+});
+
+describe("parseRate", () => {
+  it("reads prices per million tokens with up to four decimals", () => {
+    expect(parseRate("5")).toBe(5);
+    expect(parseRate(" $0.075 ")).toBe(0.075);
+    expect(parseRate("6.25")).toBe(6.25);
+  });
+
+  it("rejects anything else", () => {
+    for (const bad of ["", "-1", "1.23456", "abc", "20000", "1,000", null]) {
+      expect(parseRate(bad), String(bad)).toBeNull();
+    }
+  });
+});
+
+describe("formatRate", () => {
+  it("shows at least cents and keeps smaller fractions", () => {
+    expect(formatRate(6.25)).toBe("$6.25");
+    expect(formatRate(0.075)).toBe("$0.075");
+    expect(formatRate(10)).toBe("$10.00");
   });
 });

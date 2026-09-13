@@ -9,12 +9,22 @@ vi.mock("@/lib/session", () => ({
 vi.mock("@/lib/auth", () => ({ auth: { api: { banUser: vi.fn(), unbanUser: vi.fn() } } }));
 vi.mock("@/lib/audit", () => ({ recordAudit: vi.fn() }));
 vi.mock("@/lib/budget", () => ({ setBudget: vi.fn() }));
+vi.mock("@/lib/prices", () => ({ savePrice: vi.fn(), removePrice: vi.fn() }));
 
 import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth";
 import { setBudget } from "@/lib/budget";
-import { saveBudgetAction, setBannedAction, type BanState, type BudgetFormState } from "./actions";
+import { removePrice, savePrice } from "@/lib/prices";
+import {
+  removePriceAction,
+  saveBudgetAction,
+  savePriceAction,
+  setBannedAction,
+  type BanState,
+  type BudgetFormState,
+  type PriceFormState,
+} from "./actions";
 
 const noError: BanState = { error: null };
 const idle: BudgetFormState = { status: "idle", message: "" };
@@ -98,5 +108,57 @@ describe("saveBudgetAction", () => {
       entered: { monthlyCap: "50000", perJobCap: "10" },
     });
     expect(setBudget).not.toHaveBeenCalled();
+  });
+});
+
+describe("savePriceAction", () => {
+  const idlePrice: PriceFormState = { status: "idle", message: "" };
+  const gpt = {
+    provider: "OpenAI",
+    model: "gpt-5.6-sol",
+    input: "5",
+    output: "30",
+    cacheRead: "0.5",
+    cacheWrite5m: "6.25",
+    cacheWrite1h: "",
+    batchDiscountPercent: "50",
+  };
+
+  it("saves a model's prices, with a blank cache price as 0", async () => {
+    const state = await savePriceAction(idlePrice, form(gpt));
+
+    expect(savePrice).toHaveBeenCalledWith("admin-1", "openai", "gpt-5.6-sol", {
+      input: 5,
+      output: 30,
+      cacheRead: 0.5,
+      cacheWrite5m: 6.25,
+      cacheWrite1h: 0,
+      batchDiscountPercent: 50,
+    });
+    expect(state).toEqual({ status: "saved", message: "Saved openai gpt-5.6-sol." });
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/prices");
+  });
+
+  it.each([
+    [{ input: "" }, "US$ per million"],
+    [{ output: "abc" }, "US$ per million"],
+    [{ batchDiscountPercent: "150" }, "0 to 100"],
+    [{ model: "gpt 5" }, "no spaces"],
+    [{ provider: "Open AI" }, "lower case"],
+  ])("refuses %o and keeps what was typed", async (change, text) => {
+    const state = await savePriceAction(idlePrice, form({ ...gpt, ...change }));
+
+    expect(state).toMatchObject({ status: "error", message: expect.stringContaining(text) });
+    expect(state.entered).toMatchObject(change);
+    expect(savePrice).not.toHaveBeenCalled();
+  });
+});
+
+describe("removePriceAction", () => {
+  it("removes a model's prices", async () => {
+    await removePriceAction(form({ provider: "openai", model: "gpt-5.6-sol" }));
+
+    expect(removePrice).toHaveBeenCalledWith("admin-1", "openai", "gpt-5.6-sol");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/prices");
   });
 });
