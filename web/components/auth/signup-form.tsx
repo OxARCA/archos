@@ -3,10 +3,10 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn, signUp } from "@/lib/auth-client";
+import { signUp } from "@/lib/auth-client";
 import { Button, ErrorText, Field, Input } from "@/components/ui";
 
-export function SignupForm({ googleEnabled, emailHint }: { googleEnabled: boolean; emailHint: string }) {
+export function SignupForm({ emailHint }: { emailHint: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -56,16 +56,6 @@ export function SignupForm({ googleEnabled, emailHint }: { googleEnabled: boolea
       <Button type="submit" disabled={pending}>
         {pending ? "Creating account…" : "Create account"}
       </Button>
-
-      {googleEnabled ? (
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => signIn.social({ provider: "google", callbackURL: "/dashboard" })}
-        >
-          Continue with Google
-        </Button>
-      ) : null}
 
       <p className="text-center text-sm text-muted">
         Already have an account?{" "}

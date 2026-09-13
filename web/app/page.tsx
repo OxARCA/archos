@@ -55,7 +55,7 @@ export default async function Home() {
         <section className="mt-16 grid gap-4 sm:grid-cols-3">
           <Step n="1" title="Sign in">
             {signUpPolicy.open ? "Create an account" : "By invitation from the OxARCA team"}. Email
-            and password today; Google and Oxford SSO later.
+            and password today; Oxford SSO later.
           </Step>
           <Step n="2" title="Get a budget">
             An OxARCA admin sets how much model usage your account can spend.

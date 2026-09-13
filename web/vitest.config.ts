@@ -14,6 +14,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["{app,lib}/**/*.test.ts"],
+    // Starts a throwaway Postgres and points DATABASE_URL at it.
+    globalSetup: ["./test/global-setup.ts"],
     clearMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,

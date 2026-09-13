@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { SignupForm } from "@/components/auth/signup-form";
-import { authProviders, signUpPolicy } from "@/lib/auth";
+import { signUpPolicy } from "@/lib/auth";
 import { getSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Create account" };
@@ -19,7 +19,6 @@ export default async function SignupPage() {
   return (
     <AuthShell title="Create an account" lede={lede()}>
       <SignupForm
-        googleEnabled={authProviders.google}
         emailHint={
           signUpPolicy.open
             ? "Use your institutional address if you have one."

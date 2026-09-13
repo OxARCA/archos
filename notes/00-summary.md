@@ -13,7 +13,7 @@
 
 A web app where a historian can:
 
-1. **Sign in** (email + password, Google; Oxford SSO later).
+1. **Sign in** (email + password; Oxford SSO later).
 2. **Use the OxARCA team model key**, held by the engine, within a dollar cap an admin sets. (A per-user key vault was built and shelved; see the progress log.)
 3. **Submit a research question plus a collection** and have Archos run it.
 4. **Read the Evidence Report** in the browser and download it.

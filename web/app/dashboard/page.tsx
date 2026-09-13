@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
-import { Card } from "@/components/ui";
+import { Card, Row } from "@/components/ui";
+import { budgetStatus } from "@/lib/budget";
+import { formatUsd } from "@/lib/money";
 import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -9,6 +12,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const session = await requireSession("/dashboard");
   const { denied } = await searchParams;
   const { user } = session;
+  const budget = await budgetStatus(user.id);
 
   return (
     <>
@@ -36,43 +40,33 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             </dl>
           </Card>
 
-          <Placeholder title="Jobs" phase="Phase 2">
-            Submit a research question over a collection and read the Evidence Report.
-          </Placeholder>
-          <Placeholder title="Usage and budget" phase="Phase 3">
-            Tokens and dollars this month against the cap an admin sets for you.
-          </Placeholder>
+          <Card>
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 className="text-sm font-semibold tracking-wide text-muted uppercase">Usage this month</h2>
+              <Link href="/usage" className="text-sm text-accent">
+                Details
+              </Link>
+            </div>
+            <dl className="mt-3 space-y-2 text-sm">
+              <Row label="Spent">{formatUsd(budget.spentMicroUsd)}</Row>
+              <Row label="Monthly cap">
+                {budget.monthlyCapMicroUsd > 0 ? formatUsd(budget.monthlyCapMicroUsd) : "not set yet"}
+              </Row>
+              <Row label="Left to spend">{formatUsd(budget.remainingMicroUsd)}</Row>
+            </dl>
+          </Card>
+
+          <Card className="border-dashed">
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 className="text-sm font-semibold tracking-wide text-muted uppercase">Jobs</h2>
+              <span className="rounded-full border border-line px-2 py-0.5 text-xs text-muted">Coming next</span>
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-fg-2">
+              Submit a research question over a collection and read the Evidence Report.
+            </p>
+          </Card>
         </div>
       </main>
     </>
-  );
-}
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex justify-between gap-4">
-      <dt className="text-muted">{label}</dt>
-      <dd className="text-right text-fg">{children}</dd>
-    </div>
-  );
-}
-
-function Placeholder({
-  title,
-  phase,
-  children,
-}: {
-  title: string;
-  phase: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card className="border-dashed">
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold tracking-wide text-muted uppercase">{title}</h2>
-        <span className="rounded-full border border-line px-2 py-0.5 text-xs text-muted">{phase}</span>
-      </div>
-      <p className="mt-3 text-sm leading-relaxed text-fg-2">{children}</p>
-    </Card>
   );
 }

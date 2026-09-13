@@ -8,13 +8,16 @@ vi.mock("@/lib/session", () => ({
 }));
 vi.mock("@/lib/auth", () => ({ auth: { api: { banUser: vi.fn(), unbanUser: vi.fn() } } }));
 vi.mock("@/lib/audit", () => ({ recordAudit: vi.fn() }));
+vi.mock("@/lib/budget", () => ({ setBudget: vi.fn() }));
 
 import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth";
-import { setBannedAction, type BanState } from "./actions";
+import { setBudget } from "@/lib/budget";
+import { saveBudgetAction, setBannedAction, type BanState, type BudgetFormState } from "./actions";
 
 const noError: BanState = { error: null };
+const idle: BudgetFormState = { status: "idle", message: "" };
 
 function form(fields: Record<string, string>) {
   const data = new FormData();
@@ -62,5 +65,38 @@ describe("setBannedAction", () => {
 
     expect(state).toEqual({ error: "No user selected." });
     expect(auth.api.banUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("saveBudgetAction", () => {
+  it("saves caps entered in dollars", async () => {
+    const state = await saveBudgetAction(idle, form({ userId: "user-2", monthlyCap: "20", perJobCap: "12.50" }));
+
+    expect(setBudget).toHaveBeenCalledWith("admin-1", "user-2", {
+      monthlyCapMicroUsd: 20_000_000,
+      perJobCapMicroUsd: 12_500_000,
+    });
+    expect(state).toEqual({ status: "saved", message: "Saved. Monthly cap $20.00, per-job cap $12.50." });
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/users/user-2");
+  });
+
+  it("refuses amounts that aren't plain dollars", async () => {
+    const state = await saveBudgetAction(idle, form({ userId: "user-2", monthlyCap: "-5", perJobCap: "10" }));
+
+    expect(state.status).toBe("error");
+    // Handed back so the form shows what was typed, not the old caps.
+    expect(state.entered).toEqual({ monthlyCap: "-5", perJobCap: "10" });
+    expect(setBudget).not.toHaveBeenCalled();
+  });
+
+  it("refuses caps above $10,000", async () => {
+    const state = await saveBudgetAction(idle, form({ userId: "user-2", monthlyCap: "50000", perJobCap: "10" }));
+
+    expect(state).toEqual({
+      status: "error",
+      message: "Caps above $10,000.00 aren't allowed here.",
+      entered: { monthlyCap: "50000", perJobCap: "10" },
+    });
+    expect(setBudget).not.toHaveBeenCalled();
   });
 });

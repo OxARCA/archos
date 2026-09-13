@@ -7,7 +7,7 @@ model keys, job submission and usage control. The Python pipeline runs separatel
 ## Status
 
 - [x] Scaffold: Next.js 16 (App Router, TypeScript, Turbopack), Tailwind v4 with the OxARCA palette
-- [x] Login: Better Auth with email + password, optional Google, roles (`admin`, `researcher`),
+- [x] Login: Better Auth with email + password, roles (`admin`, `researcher`),
   sign-up by invitation (`ADMIN_EMAILS`, `ALLOWED_EMAILS`), optional open registration by domain
   (`OPEN_REGISTRATION`, `ALLOWED_EMAIL_DOMAINS`; off by default)
 - [x] Database: Drizzle ORM over node-postgres; Neon on Vercel, embedded Postgres locally (`npm run db:local`)
@@ -15,7 +15,9 @@ model keys, job submission and usage control. The Python pipeline runs separatel
 - [x] Dashboard, and an admin user list with ban and unban
 - [x] Audit log of admin actions (`audit_log` table)
 - [x] Unit tests with Vitest (`npm test`)
-- [ ] Budgets and usage tracking for the shared OxARCA model key, then jobs and engine integration
+- [x] Budgets and usage tracking: per-user monthly caps in dollars (set on `/admin/users/[id]`), a
+  usage ledger, `/usage` for each person, model prices in `lib/prices.ts`
+- [ ] Jobs and engine integration, including the signed endpoint where the engine reports usage
 
 The pilot runs on one OxARCA team key held by the engine, with per-user dollar caps. A per-user
 API key vault was built and is shelved on the `key-vault` branch.
@@ -56,7 +58,7 @@ database.
 ## Test
 
 ```bash
-npm test                            # unit tests (Vitest); no database or server needed
+npm test                            # Vitest; starts its own throwaway Postgres, no server needed
 npm run typecheck && npm run lint
 ```
 
@@ -81,6 +83,8 @@ The smoke test uses `admin@example.com` and `researcher@example.com` with the pa
 5. Sign in with an `ADMIN_EMAILS` account. The Admin link appears and lists every user.
 6. As an admin, press **Ban** next to another user and confirm. They are signed out at once and
    cannot sign in until you press **Unban**.
+7. As an admin, open a user and set their monthly cap. They see it, and what they have spent,
+   on `/usage`.
 
 ## Scripts
 
@@ -107,8 +111,8 @@ Schema workflow: our tables live in `db/app-schema.ts`. Better Auth's are genera
 2. Storage → create **Neon** (London or Frankfurt); `DATABASE_URL` is injected.
 3. Environment variables (mark secrets *Sensitive*): `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
    `ADMIN_EMAILS`, `ALLOWED_EMAILS` (everyone else who may sign up), and optionally
-   `OPEN_REGISTRATION` with `ALLOWED_EMAIL_DOMAINS` (leave unset to keep it off),
-   `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+   `OPEN_REGISTRATION` with `ALLOWED_EMAIL_DOMAINS` (leave unset to keep it off) and
+   `TEAM_MONTHLY_USD_CAP` (team-wide monthly limit).
 4. Deploy. The build script applies migrations before `next build`.
 
 Full deployment notes: `../notes/04-tools-and-vercel-deployment.md`.
@@ -127,6 +131,10 @@ lib/auth.ts           Better Auth server config
 lib/auth-client.ts    Better Auth React client
 lib/session.ts        session helpers for server components and actions
 lib/audit.ts          writes audit_log entries
+lib/prices.ts         model prices per million tokens
+lib/budget.ts         caps, spend this month, what is left
+lib/usage.ts          the usage ledger: record a model call, summaries
+lib/money.ts          dollars ↔ micro-dollars
 proxy.ts              optimistic route protection
 test/                 Vitest helpers (tests sit next to the code as *.test.ts)
 ```

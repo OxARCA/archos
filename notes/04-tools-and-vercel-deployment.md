@@ -59,7 +59,7 @@ The architecture does not need Pro. Long work runs on Modal, so every Vercel fun
 3. **Neon** and **Vercel Blob**: created from the Vercel dashboard, no separate signup.
 4. **Modal** workspace "oxarca"; add the two engineers.
 5. **Resend** account; verify the sending domain.
-6. **Google Cloud** project for the OAuth client (Google sign-in).
+6. *Not needed: Google sign-in was dropped on 2026-09-13.*
 7. **Domain**. `github.io` cannot host the app. Buy `oxarca.org` (or similar) and point `app.oxarca.org` at Vercel; the static site can move to `www.oxarca.org` later. An `ox.ac.uk` subdomain via Oxford IT is possible but slow to obtain.
 8. **Sentry** project (optional in week 1, wanted before the pilot).
 
@@ -117,7 +117,6 @@ Turn on Neon's **branch per preview deployment** option in the integration setti
 | `BETTER_AUTH_SECRET` | `openssl rand -base64 32` | yes |
 | `BETTER_AUTH_URL` | `https://app.oxarca.org` (preview: leave unset, Better Auth reads `VERCEL_URL`) | no |
 | `KEY_ENCRYPTION_KEY_V1` | `openssl rand -base64 32`, generated on a trusted machine, stored nowhere else | **yes** |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google Cloud console; redirect URI `https://app.oxarca.org/api/auth/callback/google` | yes |
 | `RESEND_API_KEY` | Resend | yes |
 | `ENGINE_SUBMIT_URL` | Modal endpoint URL from step 8 | no |
 | `MODAL_PROXY_TOKEN_ID`, `MODAL_PROXY_TOKEN_SECRET` | Modal proxy-auth token | yes |

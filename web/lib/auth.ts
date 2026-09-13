@@ -47,8 +47,6 @@ function vercelOrigins(): string[] {
     .map((host) => `https://${host}`);
 }
 
-const googleConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
-
 export const ROLES = ["admin", "researcher"] as const;
 export type Role = (typeof ROLES)[number];
 
@@ -85,15 +83,6 @@ export const auth = betterAuth({
     requireEmailVerification: false,
   },
 
-  socialProviders: googleConfigured
-    ? {
-        google: {
-          clientId: process.env.GOOGLE_CLIENT_ID!,
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        },
-      }
-    : {},
-
   databaseHooks: {
     user: {
       create: {
@@ -122,6 +111,3 @@ export const auth = betterAuth({
 
 export type Session = typeof auth.$Infer.Session;
 export type SessionUser = Session["user"];
-
-/** True when Google sign-in is configured; used by the UI to show the button. */
-export const authProviders = { google: googleConfigured } as const;

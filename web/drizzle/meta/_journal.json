@@ -15,6 +15,13 @@
       "when": 1789238368297,
       "tag": "0001_tan_mad_thinker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789313023902,
+      "tag": "0002_cheerful_shard",
+      "breakpoints": true
     }
   ]
 }

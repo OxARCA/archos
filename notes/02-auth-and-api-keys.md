@@ -9,7 +9,7 @@
 | Method | Status | Notes |
 |---|---|---|
 | Email + password with verification | v1 | Resend sends the verification email |
-| Google | v1 | Most collaborators have a Google identity; costs nothing |
+| Google | dropped (2026-09-13) | Not wanted for the pilot; Better Auth can add it back later |
 | Magic link | v1, optional | Better Auth plugin; nice for non-technical historians |
 | Microsoft (Oxford SSO) | later | Oxford's SSO is Microsoft Entra; Better Auth has a `microsoft` provider. Needs an app registration from Oxford IT |
 | Passkeys / 2FA | later | plugins exist; enable 2FA for admins first |
@@ -29,9 +29,6 @@ import { db } from "@/db";
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg" }),
   emailAndPassword: { enabled: true, requireEmailVerification: true },
-  socialProviders: {
-    google: { clientId: process.env.GOOGLE_CLIENT_ID!, clientSecret: process.env.GOOGLE_CLIENT_SECRET! },
-  },
   plugins: [admin({ defaultRole: "researcher" }), nextCookies()],
   // rate limiting is on by default; tune per route if needed
 });

@@ -32,7 +32,7 @@ describe("trusted origins", () => {
 
     for (const host of Object.values(VERCEL_HOSTS)) {
       const response = await auth.handler(signInFrom(`https://${host}`));
-      // Past the origin check the lookup fails (no database here), but not with 403.
+      // Past the origin check the sign-in fails (there is no such user), but not with 403.
       expect(response.status, host).not.toBe(403);
     }
   });

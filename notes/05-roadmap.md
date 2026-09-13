@@ -17,7 +17,7 @@ Done when: a push to `main` deploys, `/api/internal/*` rejects unsigned calls, a
 *Update 2026-09-12: the pilot uses one OxARCA team key, so the `/keys` page and the vault are shelved on branch `key-vault`. Phase 1 is now login, roles, ban and the audit log.*
 
 Deliverables
-- Better Auth with email + password (verified via Resend) and Google; admin plugin; `proxy.ts` protection; closed sign-up or domain allowlist.
+- Better Auth with email + password (verified via Resend); admin plugin; `proxy.ts` protection; closed sign-up or domain allowlist.
 - `/keys` page: save with validation call, show `last4`, replace, remove. Vault module with AAD and versioned master key.
 - Audit log entries for key events.
 - Tests: encrypt → decrypt round-trip; AAD mismatch fails; ciphertext is what lands in the DB; server action never returns the key.

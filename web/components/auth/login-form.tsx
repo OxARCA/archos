@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "@/lib/auth-client";
 import { Button, ErrorText, Field, Input } from "@/components/ui";
 
-export function LoginForm({ next, googleEnabled }: { next: string; googleEnabled: boolean }) {
+export function LoginForm({ next }: { next: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -43,16 +43,6 @@ export function LoginForm({ next, googleEnabled }: { next: string; googleEnabled
       <Button type="submit" disabled={pending}>
         {pending ? "Signing in…" : "Sign in"}
       </Button>
-
-      {googleEnabled ? (
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => signIn.social({ provider: "google", callbackURL: next })}
-        >
-          Continue with Google
-        </Button>
-      ) : null}
 
       <p className="text-center text-sm text-muted">
         No account yet?{" "}

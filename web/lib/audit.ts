@@ -3,14 +3,14 @@ import "server-only";
 import { db, type Database } from "@/db";
 import { auditLog } from "@/db/app-schema";
 
-export type AuditAction = "key.saved" | "key.revoked" | "user.banned" | "user.unbanned";
+export type AuditAction = "user.banned" | "user.unbanned" | "budget.changed";
 
 type AuditEntry = {
   actorId: string;
   action: AuditAction;
-  targetType: "provider_key" | "user";
+  targetType: "user";
   targetId: string;
-  // Never put key material here: provider and last4 at most.
+  // Never put secrets here.
   metadata?: Record<string, unknown>;
 };
 
